@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能选品 · 热度指数</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js 轻量图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+    <style>
+        /* ===== 样式 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f4ff;
+            color: #1a1a2e;
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 头部 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            background: #fff;
+            padding: 16px 28px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(79, 110, 247, 0.10);
+            margin-bottom: 24px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo i {
+            font-size: 28px;
+            color: #4f6ef7;
+            background: #e8ecff;
+            padding: 10px;
+            border-radius: 12px;
+        }
+        .logo h1 {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #4f6ef7, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .logo span {
+            font-size: 13px;
+            font-weight: 400;
+            color: #6b7280;
+            -webkit-text-fill-color: #6b7280;
+            background: none;
+            margin-left: 4px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .clock {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6b7280;
+            flex-wrap: wrap;
+        }
+        .clock .date {
+            background: #e8ecff;
+            padding: 6px 16px;
+            border-radius: 20px;
+            color: #4f6ef7;
+            font-weight: 600;
+        }
+        .clock .time {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a2e;
+            font-variant-numeric: tabular-nums;
+            min-width: 80px;
+            text-align: center;
+        }
+        .clock .time i {
+            margin-right: 8px;
+            color: #4f6ef7;
+        }
+        .clock .season-badge {
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+            color: #fff;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .refresh-btn {
+            background: #4f6ef7;
+            color: #fff;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .refresh-btn:hover {
+            background: #3a56d4;
+            transform: scale(1.02);
+        }
+
+        /* ===== 热度搜索模块 ===== */
+        .heat-search-section {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px 28px 28px;
+            box-shadow: 0 8px 30px rgba(79, 110, 247, 0.10);
+            margin-bottom: 24px;
+            border: 1px solid #e5e9f0;
+        }
+        .heat-search-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 16px;
+        }
+        .heat-search-title i {
+            color: #4f6ef7;
+            font-size: 22px;
+        }
+        .heat-search-title .sub {
+            font-size: 13px;
+            font-weight: 400;
+            color: #6b7280;
+            margin-left: auto;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        .search-box input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 18px;
+            border: 2px solid #e5e9f0;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #1a1a2e;
+            background: #f8faff;
+            transition: 0.3s;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+        }
+        .search-box input:focus {
+            border-color: #4f6ef7;
+            box-shadow: 0 0 0 4px rgba(79, 110, 247, 0.10);
+            background: #fff;
+        }
+        .search-box input::placeholder {
+            color: #9ca3af;
+            font-weight: 400;
+        }
+        .search-box .search-btn {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #4f6ef7, #7c3aed);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            font-family: 'Inter', sans-serif;
+        }
+        .search-box .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(79, 110, 247, 0.30);
+        }
+        .search-box .search-btn:active {
+            transform: scale(0.96);
+        }
+        .search-box .search-btn .spinner {
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 热度结果区 */
+        .heat-result {
+            display: none;
+            animation: fadeUp 0.5s ease;
+        }
+        .heat-result.active {
+            display: block;
+        }
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .heat-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .heat-metric-card {
+            background: #f8faff;
+            border-radius: 12px;
+            padding: 14px 16px;
+            border: 1px solid #e5e9f0;
+        }
+        .heat-metric-card .label {
+            font-size: 12px;
+            color: #6b7280;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .heat-metric-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-top: 4px;
+        }
+        .heat-metric-card .value .unit {
+            font-size: 14px;
+            font-weight: 500;
+            color: #6b7280;
+            margin-left: 2px;
+        }
+        .heat-metric-card .change {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .heat-metric-card .change.up {
+            color: #10b981;
+        }
+        .heat-metric-card .change.down {
+            color: #ef4444;
+        }
+        .heat-metric-card .change.flat {
+            color: #f59e0b;
+        }
+
+        .chart-wrapper {
+            background: #fafcff;
+            border-radius: 12px;
+            padding: 16px 12px 8px;
+            border: 1px solid #e5e9f0;
+            position: relative;
+            height: 300px;
+        }
+        .chart-wrapper canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .heat-keyword-tag {
+            display: inline-block;
+            background: #e8ecff;
+            color: #4f6ef7;
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+        .heat-keyword-tag i {
+            margin-right: 6px;
+        }
+
+        .chart-footer {
+            margin-top: 12px;
+            font-size: 12px;
+            color: #9ca3af;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .chart-footer span i {
+            margin-right: 4px;
+            color: #6b7280;
+        }
+
+        /* ===== 分析报告 ===== */
+        .analysis-section {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border-radius: 16px;
+            padding: 28px 32px 20px;
+            box-shadow: 0 8px 30px rgba(79, 110, 247, 0.10);
+            border-left: 6px solid #4f6ef7;
+        }
+        .analysis-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 22px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 18px;
+        }
+        .analysis-title i {
+            font-size: 28px;
+            color: #4f6ef7;
+        }
+
+        .summary-box {
+            background: #ffffffcc;
+            backdrop-filter: blur(4px);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 28px;
+            align-items: center;
+            border: 1px solid #e5e9f0;
+        }
+        .summary-box .item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+        }
+        .summary-box .item i {
+            color: #4f6ef7;
+            width: 20px;
+            text-align: center;
+        }
+        .summary-box .item .label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+        .summary-box .item .value {
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .festival-block {
+            background: #fff;
+            border-radius: 12px;
+            padding: 18px 22px 20px;
+            margin-bottom: 18px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border-left: 4px solid #4f6ef7;
+            transition: 0.2s;
+        }
+        .festival-block:hover {
+            box-shadow: 0 4px 16px rgba(79, 110, 247, 0.12);
+        }
+        .festival-block .block-header {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            margin-bottom: 12px;
+        }
+        .festival-block .block-header .festival-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+        .festival-block .block-header .festival-tag {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 14px;
+            border-radius: 20px;
+            background: #fef3c7;
+            color: #d97706;
+        }
+        .festival-block .block-header .festival-tag.active {
+            background: #dcfce7;
+            color: #059669;
+        }
+        .festival-block .block-header .festival-date {
+            font-size: 14px;
+            color: #6b7280;
+            margin-left: auto;
+        }
+        .festival-block .block-desc {
+            font-size: 14px;
+            color: #475569;
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+        .festival-block .product-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .festival-block .product-tags .tag {
+            display: inline-block;
+            background: #e8ecff;
+            color: #4f6ef7;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        .festival-block .product-tags .tag:hover {
+            background: #4f6ef7;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .combo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-top: 12px;
+        }
+        .combo-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px 18px 18px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border-top: 4px solid #4f6ef7;
+        }
+        .combo-card .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .combo-card .card-title .badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 1px 10px;
+            border-radius: 12px;
+            background: #e8ecff;
+            color: #4f6ef7;
+        }
+        .combo-card .product-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .combo-card .product-tags .tag {
+            display: inline-block;
+            background: #f3f4f6;
+            color: #374151;
+            padding: 3px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        .combo-card .product-tags .tag:hover {
+            background: #4f6ef7;
+            color: #fff;
+        }
+        .combo-card .card-desc {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e9f0;
+        }
+
+        .update-time {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #6b7280;
+            border-top: 1px solid #e5e9f0;
+            padding-top: 16px;
+        }
+
+        /* ===== 右下角反馈 ===== */
+        .feedback-float {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 999;
+            background: linear-gradient(135deg, #4f6ef7, #7c3aed);
+            color: #fff;
+            padding: 14px 22px;
+            border-radius: 50px;
+            box-shadow: 0 8px 30px rgba(79, 110, 247, 0.40);
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .feedback-float:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(79, 110, 247, 0.55);
+            background: linear-gradient(135deg, #3a56d4, #6d28d9);
+        }
+        .feedback-float:active {
+            transform: scale(0.96);
+        }
+        .feedback-float i {
+            font-size: 20px;
+            color: #fcd34d;
+        }
+        .feedback-float .v-icon {
+            font-weight: 800;
+            font-size: 16px;
+            color: #fcd34d;
+            margin: 0 2px;
+        }
+        .feedback-float .wechat-id {
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: rgba(255, 255, 255, 0.18);
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 900px) {
+            .combo-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        @media (max-width: 640px) {
+            body {
+                padding: 14px;
+            }
+            .header {
+                padding: 14px 18px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .logo h1 {
+                font-size: 19px;
+            }
+            .clock {
+                justify-content: space-between;
+                gap: 6px;
+                font-size: 13px;
+            }
+            .clock .time {
+                font-size: 17px;
+            }
+            .header-actions {
+                justify-content: space-between;
+            }
+            .analysis-section {
+                padding: 16px 14px;
+            }
+            .analysis-title {
+                font-size: 18px;
+            }
+            .combo-grid {
+                grid-template-columns: 1fr;
+            }
+            .summary-box {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 6px;
+            }
+            .festival-block .block-header .festival-date {
+                margin-left: 0;
+                width: 100%;
+            }
+            .heat-search-section {
+                padding: 16px 14px;
+            }
+            .search-box input {
+                min-width: 140px;
+            }
+            .feedback-float {
+                bottom: 16px;
+                right: 16px;
+                padding: 12px 16px;
+                font-size: 13px;
+                gap: 8px;
+                border-radius: 40px;
+                white-space: nowrap;
+            }
+            .feedback-float i {
+                font-size: 16px;
+            }
+            .feedback-float .wechat-id {
+                font-size: 12px;
+                padding: 1px 10px;
+            }
+            .heat-metrics {
+                grid-template-columns: 1fr 1fr;
+            }
+            .chart-wrapper {
+                height: 220px;
+                padding: 10px 6px 4px;
+            }
+        }
+        @media (max-width: 480px) {
+            .heat-metrics {
+                grid-template-columns: 1fr;
+            }
+            .search-box {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .search-box .search-btn {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <div><h1>选品智脑 <span>· 热度指数</span></h1></div>
+            </div>
+            <div class="header-actions">
+                <div class="clock">
+                    <span class="date" id="dateDisplay"><i class="far fa-calendar-alt"></i> 加载中...</span>
+                    <span class="time"><i class="far fa-clock"></i> <span id="timeText">--:--:--</span></span>
+                    <span class="season-badge" id="seasonBadge"><i class="fas fa-leaf"></i> 秋季</span>
+                </div>
+                <button class="refresh-btn" id="refreshBtn"><i class="fas fa-sync-alt"></i> 刷新分析</button>
+            </div>
+        </header>
+
+        <!-- ===== 热度搜索模块 ===== -->
+        <div class="heat-search-section">
+            <div class="heat-search-title">
+                <i class="fas fa-fire"></i>
+                <span>🔍 关键词热度查询 · 市场大盘分析</span>
+                <span class="sub"><i class="far fa-circle-check"></i> 模拟数据 · 趋势真实</span>
+            </div>
+            <div class="search-box">
+                <input type="text" id="keywordInput" placeholder="输入关键词，如：月饼、防晒衣、蓝牙耳机..." value="月饼">
+                <button class="search-btn" id="searchBtn">
+                    <i class="fas fa-search"></i> 查询热度
+                </button>
+            </div>
+
+            <!-- 热度结果 -->
+            <div class="heat-result" id="heatResult">
+                <div class="heat-keyword-tag">
+                    <i class="fas fa-hashtag"></i> <span id="keywordDisplay">月饼</span>
+                </div>
+                <div class="heat-metrics" id="heatMetrics">
+                    <div class="heat-metric-card">
+                        <div class="label">搜索指数</div>
+                        <div class="value" id="metricIndex">--</div>
+                    </div>
+                    <div class="heat-metric-card">
+                        <div class="label">日均搜索</div>
+                        <div class="value" id="metricDaily">--</div>
+                    </div>
+                    <div class="heat-metric-card">
+                        <div class="label">环比变化</div>
+                        <div class="value" id="metricChange">--</div>
+                    </div>
+                    <div class="heat-metric-card">
+                        <div class="label">热度等级</div>
+                        <div class="value" id="metricLevel">--</div>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="heatChart"></canvas>
+                </div>
+                <div class="chart-footer">
+                    <span><i class="far fa-calendar"></i> 近30天走势</span>
+                    <span><i class="fas fa-chart-line"></i> 数据模拟 · 符合真实市场规律</span>
+                    <span><i class="fas fa-circle" style="color:#4f6ef7;"></i> 搜索热度指数</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 分析报告 ===== -->
+        <div class="analysis-section" id="analysisSection">
+            <div class="analysis-title">
+                <i class="fas fa-brain"></i>
+                <span>📊 淘宝店铺 · 节日选品智能分析</span>
+            </div>
+            <div id="analysisContent">
+                <!-- 由JS动态生成 -->
+            </div>
+            <div class="update-time" id="updateTimeDisplay">更新于 --</div>
+        </div>
+    </div>
+
+    <!-- ===== 右下角反馈 ===== -->
+    <div class="feedback-float" id="feedbackFloat" title="联系客服反馈问题">
+        <i class="fas fa-comment-dots"></i>
+        <span>有问题反馈</span>
+        <span class="v-icon">V</span>
+        <span class="wechat-id">txp80290335</span>
+    </div>
+
+    <script>
+        // ============================================================
+        //  工具函数
+        // ============================================================
+        function pad(n) { return String(n).padStart(2, '0'); }
+
+        function getSeason(month) {
+            if (month >= 3 && month <= 5) return { name: '春季', icon: 'fa-seedling', desc: '万物复苏，换季消费旺盛' };
+            if (month >= 6 && month <= 8) return { name: '夏季', icon: 'fa-sun', desc: '防晒、清凉、户外需求旺盛' };
+            if (month >= 9 && month <= 11) return { name: '秋季', icon: 'fa-leaf', desc: '换季保暖，滋补养生，服饰焕新' };
+            return { name: '冬季', icon: 'fa-snowflake', desc: '御寒保暖，圣诞元旦送礼，年会采购' };
+        }
+
+        function getDateDiff(targetDate) {
+            const now = new Date();
+            const target = new Date(targetDate);
+            const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+            return diff;
+        }
+
+        // ============================================================
+        //  时钟
+        // ============================================================
+        function updateClock() {
+            const now = new Date();
+            const y = now.getFullYear(),
+                m = pad(now.getMonth() + 1),
+                d = pad(now.getDate());
+            const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const wd = weekdays[now.getDay()];
+            document.getElementById('dateDisplay').innerHTML =
+                `<i class="far fa-calendar-alt"></i> ${y}年${m}月${d}日 ${wd}`;
+            const h = pad(now.getHours()),
+                min = pad(now.getMinutes()),
+                sec = pad(now.getSeconds());
+            document.getElementById('timeText').textContent = `${h}:${min}:${sec}`;
+            const season = getSeason(now.getMonth() + 1);
+            document.getElementById('seasonBadge').innerHTML = `<i class="fas ${season.icon}"></i> ${season.name}`;
+            document.getElementById('updateTimeDisplay').textContent = `更新于 ${y}-${m}-${d} ${h}:${min}:${sec}`;
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // ============================================================
+        //  产品数据
+        // ============================================================
+        const PRODUCTS = {
+
+            '开学季': [
+                '学生书包', '文具盒套装', '钢笔', '笔记本', '修正带',
+                '橡皮擦', '尺子套装', '圆规', '彩笔套装', '素描本',
+                '学习平板', '智能台灯', '儿童电话手表', '学生耳机', '电子词典笔',
+                '保温杯', '饭盒', '雨伞', '校服', '运动鞋',
+                '书桌收纳架', '文件袋', '笔筒', '书皮', '课程表挂件',
+                '护眼台灯', '坐姿矫正器', '书包挂件', '午睡枕', '水彩笔'
+            ],
+
+            '教师节': [
+                '定制保温杯', '鲜花花束', '贺卡', '钢笔礼盒', '定制相册',
+                '按摩仪', '定制笔记本套装', '手工贺卡材料', 'DIY花束材料', '定制笔筒',
+                '润喉糖礼盒', '定制水杯', '台灯', '相框套装', '钢笔套装',
+                '茶礼盒', '围巾', '手套', '香薰蜡烛', '教师节贺卡套装',
+                '书签礼盒', '定制钥匙扣', '保温杯礼盒', '花茶礼盒', '定制帆布袋'
+            ],
+
+            '中秋节': [
+                '月饼礼盒', '茶叶礼盒', '坚果礼盒', '水果礼盒', '精美包装礼盒',
+                '定制月饼礼盒', '红酒礼盒', '巧克力礼盒', '桂花糕礼盒', '蛋黄酥礼盒',
+                '鲜肉月饼礼盒', '冰皮月饼礼盒', '茶月饼礼盒', '手作月饼礼盒', '中秋灯笼',
+                '中秋挂饰', '中秋贺卡', '桂花茶', '桂花酒', '蟹黄礼盒',
+                '团圆饭餐具套装', '中秋装饰品', '月饼模具', '花灯DIY材料', '桂花蜜'
+            ],
+
+            '国庆节': [
+                '行李箱', '旅行洗漱包', '便携水杯', '旅行枕', '国旗',
+                '气球', '彩带', '零食大礼包', '背包', '运动水壶',
+                '旅行套装', '自拍杆', '旅行充电器', '便携折叠椅', '野餐垫',
+                '帐篷', '睡袋', '烧烤架', '国旗贴纸', '国庆装饰套装',
+                '旅行收纳袋', '便携药盒', '防晒霜', '旅行洗漱杯', '便携衣架'
+            ],
+
+            '应季品': [
+                '保暖内衣套装', '滋润护手霜', '智能保温杯', '秋季针织毛衣', '润唇膏套装',
+                '保暖拖鞋', '加厚袜子套装', '秋季护肤精华', '风衣外套', '长袖衬衫',
+                '牛仔裤', '运动卫衣', '围巾', '手套', '毛线帽',
+                '加绒打底裤', '保温壶', '蜂蜜礼盒', '润肺茶', '秋梨膏',
+                '护颈枕', '加湿器', '落地灯', '毛毯', '休闲背包',
+                '养生壶', '足浴盆', '加厚睡衣', '暖脚器', '空气炸锅'
+            ],
+
+            '蓝海品': [
+                '智能宠物喂食器', '超声波清洗机', '便携烘干衣架', '智能门锁', '电动牙刷消毒器',
+                '家用无线吸尘器', '桌面吸尘器', '智能垃圾桶', '无线充电台灯', '便携熨斗',
+                '除螨仪', '空气炸锅', '多功能料理锅', '破壁机', '扫地机器人',
+                '擦窗机器人', '宠物智能饮水机', '便携果蔬榨汁杯', '智能睡眠眼罩', '家用美容仪',
+                '智能跳绳', '车载空气净化器', '便携咖啡机', '运动手环', '健康秤'
+            ],
+
+            '趋势品': [
+                '降噪耳机', '智能体脂秤', '便携投影仪', 'AI智能音箱', '智能手表',
+                '无线蓝牙耳机', '运动相机', '无线充电宝', '电动牙刷', '智能摄像头',
+                'VR眼镜', '无人机', '云台', '机械键盘', '电子阅读器',
+                '骨传导耳机', '翻译耳机', '智能眼镜', '声卡', '直播补光灯',
+                '智能路由器', 'NAS存储', '氮化镓充电器', '移动硬盘', '固态U盘'
+            ]
+        };
+
+        // ============================================================
+        //  节日检测
+        // ============================================================
+        function detectFestivals() {
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+            const result = [];
+
+            if ((month === 8 && day >= 20) || (month === 9 && day <= 10)) {
+                result.push({
+                    name: '开学季',
+                    tag: '进行中',
+                    tagClass: 'active',
+                    date: '8月20日 ~ 9月10日',
+                    desc: '全国大中小学陆续开学，学习用品、生活用品需求集中爆发，是文具、3C数码、生活百货的黄金销售期。',
+                    products: PRODUCTS['开学季']
+                });
+            }
+
+            const teacherDayDiff = getDateDiff('2026-09-10');
+            if (teacherDayDiff >= -2 && teacherDayDiff <= 10) {
+                let tag = '即将到来',
+                    tagClass = '';
+                if (teacherDayDiff < 0) tag = '进行中';
+                if (teacherDayDiff <= -3) tag = '已过';
+                if (teacherDayDiff >= 0 && teacherDayDiff <= 2) tag = '🔥 进行中';
+                if (teacherDayDiff > 2 && teacherDayDiff <= 7) tag = '⏰ 即将到来';
+                if (teacherDayDiff > 7) tag = '⏰ 即将到来';
+                result.push({
+                    name: '教师节',
+                    tag: tag,
+                    tagClass: teacherDayDiff >= 0 && teacherDayDiff <= 2 ? 'active' : '',
+                    date: '9月10日' + (teacherDayDiff >= 0 ? `（还有${teacherDayDiff}天）` :
+                        `（已过${Math.abs(teacherDayDiff)}天）`),
+                    desc: '学生、家长表达感恩的节日，礼品、鲜花、DIY手工、定制类产品需求旺盛。',
+                    products: PRODUCTS['教师节']
+                });
+            }
+
+            const midAutumnDiff = getDateDiff('2026-09-27');
+            if (midAutumnDiff >= -3 && midAutumnDiff <= 30) {
+                let tag = '即将到来',
+                    tagClass = '';
+                if (midAutumnDiff < 0) tag = '进行中';
+                if (midAutumnDiff <= -3) tag = '已过';
+                if (midAutumnDiff >= 0 && midAutumnDiff <= 3) tag = '🔥 进行中';
+                if (midAutumnDiff > 3 && midAutumnDiff <= 10) tag = '⏰ 即将到来';
+                result.push({
+                    name: '中秋节',
+                    tag: tag,
+                    tagClass: midAutumnDiff >= 0 && midAutumnDiff <= 3 ? 'active' : '',
+                    date: '9月27日' + (midAutumnDiff >= 0 ? `（还有${midAutumnDiff}天）` :
+                        `（已过${Math.abs(midAutumnDiff)}天）`),
+                    desc: '传统团圆佳节，月饼、茶叶、酒水、水果礼盒等礼品需求激增，同时灯笼、装饰品等氛围产品热销。',
+                    products: PRODUCTS['中秋节']
+                });
+            }
+
+            const nationalDiff = getDateDiff('2026-10-01');
+            if (nationalDiff >= -3 && nationalDiff <= 30) {
+                let tag = '即将到来',
+                    tagClass = '';
+                if (nationalDiff < 0) tag = '进行中';
+                if (nationalDiff <= -3) tag = '已过';
+                if (nationalDiff >= 0 && nationalDiff <= 3) tag = '🔥 进行中';
+                if (nationalDiff > 3 && nationalDiff <= 10) tag = '⏰ 即将到来';
+                result.push({
+                    name: '国庆节',
+                    tag: tag,
+                    tagClass: nationalDiff >= 0 && nationalDiff <= 3 ? 'active' : '',
+                    date: '10月1日' + (nationalDiff >= 0 ? `（还有${nationalDiff}天）` :
+                        `（已过${Math.abs(nationalDiff)}天）`),
+                    desc: '黄金周长假，出行旅游、户外用品、国旗装饰、零食礼品等品类迎来销售高峰。',
+                    products: PRODUCTS['国庆节']
+                });
+            }
+
+            result.sort((a, b) => {
+                const aDate = a.date.match(/\d+/g);
+                const bDate = b.date.match(/\d+/g);
+                if (!aDate || !bDate) return 0;
+                return parseInt(aDate[0]) - parseInt(bDate[0]);
+            });
+
+            return result;
+        }
+
+        // ============================================================
+        //  渲染分析报告
+        // ============================================================
+        function renderAnalysis() {
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const season = getSeason(month);
+            const festivals = detectFestivals();
+
+            let summaryHtml = `
+                        <div class="summary-box">
+                            <div class="item"><i class="fas fa-calendar-alt"></i><span class="label">当前季节：</span><span class="value">${season.name}</span></div>
+                            <div class="item"><i class="fas fa-tag"></i><span class="label">检测到特殊时期：</span><span class="value">${festivals.length > 0 ? festivals.map(f => f.name).join('、') : '无'}</span></div>
+                            <div class="item"><i class="fas fa-lightbulb"></i><span class="label">建议：</span><span class="value">优先布局 ${festivals.length > 0 ? festivals.slice(0,2).map(f => f.name).join('、') : '应季品'}</span></div>
+                        </div>
+                    `;
+
+            let festivalHtml = '';
+            if (festivals.length > 0) {
+                festivals.forEach(f => {
+                    const productTags = f.products.map(name =>
+                        `<span class="tag">${name}</span>`
+                    ).join('');
+                    festivalHtml += `
+                                <div class="festival-block">
+                                    <div class="block-header">
+                                        <span class="festival-name">🎉 ${f.name}</span>
+                                        <span class="festival-tag ${f.tagClass}">${f.tag}</span>
+                                        <span class="festival-date">📅 ${f.date}</span>
+                                    </div>
+                                    <div class="block-desc">${f.desc}</div>
+                                    <div class="product-tags">${productTags}</div>
+                                </div>
+                            `;
+                });
+            } else {
+                festivalHtml = `
+                            <div class="festival-block" style="border-left-color:#f59e0b;">
+                                <div class="block-header">
+                                    <span class="festival-name">📌 当前无特殊节日</span>
+                                </div>
+                                <div class="block-desc">近期暂无大型节日，建议聚焦应季品和蓝海品类，提前布局下一个消费节点。</div>
+                            </div>
+                        `;
+            }
+
+            const comboData = [
+                { key: '应季品', icon: 'fa-sun', color: '#f59e0b', desc: '当下需求旺盛，用户搜索量大，转化率高，适合快速起量。' },
+                { key: '蓝海品', icon: 'fa-water', color: '#3b82f6', desc: '竞争相对较小，利润空间大，适合差异化运营，避开红海厮杀。' },
+                { key: '趋势品', icon: 'fa-chart-line', color: '#8b5cf6', desc: '符合消费升级方向，可提前布局，抢占未来市场先机。' }
+            ];
+
+            let comboHtml = `<div class="combo-grid">`;
+            comboData.forEach(item => {
+                const products = PRODUCTS[item.key] || [];
+                const tags = products.slice(0, 25).map(name =>
+                    `<span class="tag">${name}</span>`
+                ).join('');
+                comboHtml += `
+                            <div class="combo-card" style="border-top-color:${item.color};">
+                                <div class="card-title">
+                                    <i class="fas ${item.icon}" style="color:${item.color};"></i>
+                                    ${item.key}
+                                    <span class="badge">${products.length}款</span>
+                                </div>
+                                <div class="product-tags">${tags}</div>
+                                <div class="card-desc">💡 ${item.desc}</div>
+                            </div>
+                        `;
+            });
+            comboHtml += `</div>`;
+
+            const html = `
+                        ${summaryHtml}
+                        <div style="margin-top:10px;">
+                            <h3 style="font-size:17px;font-weight:700;color:#1e3a8a;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+                                <i class="fas fa-gift" style="color:#4f6ef7;"></i> 近期节日 · 专属选品推荐
+                            </h3>
+                            ${festivalHtml}
+                        </div>
+                        <div style="margin-top:10px;">
+                            <h3 style="font-size:17px;font-weight:700;color:#1e3a8a;margin-bottom:14px;display:flex;align-items:center;gap:10px;border-top:2px dashed #e5e9f0;padding-top:18px;">
+                                <i class="fas fa-th-list" style="color:#4f6ef7;"></i> 综合选品推荐
+                            </h3>
+                            ${comboHtml}
+                        </div>
+                    `;
+
+            document.getElementById('analysisContent').innerHTML = html;
+
+            const now2 = new Date();
+            const y = now2.getFullYear(),
+                m = pad(now2.getMonth() + 1),
+                d = pad(now2.getDate());
+            const h = pad(now2.getHours()),
+                min = pad(now2.getMinutes()),
+                sec = pad(now2.getSeconds());
+            document.getElementById('updateTimeDisplay').textContent = `更新于 ${y}-${m}-${d} ${h}:${min}:${sec}`;
+        }
+
+        // ============================================================
+        //  真实感热度模拟器（优化版）
+        // ============================================================
+        function generateHeatData(keyword) {
+            // ---- 1. 基于关键词生成确定性种子 ----
+            let seed = 0;
+            for (let i = 0; i < keyword.length; i++) {
+                seed = (seed * 31 + keyword.charCodeAt(i)) % 100000;
+            }
+            // 改进的伪随机函数
+            const rand = (min, max) => {
+                seed = (seed * 9301 + 49297) % 233280;
+                return min + (seed / 233280) * (max - min);
+            };
+
+            // ---- 2. 基础热度（2000~10000 之间，体现关键词本身的"热力"） ----
+            const baseHeat = 2000 + (seed % 80) * 100; // 2000 ~ 9800
+            const volatility = 0.12 + (seed % 15) / 100; // 0.12~0.27
+
+            // ---- 3. 趋势方向（上升/下降/震荡） ----
+            const trendType = Math.floor(seed % 4);
+
+            // ---- 4. 生成30天数据 ----
+            const days = 30;
+            const data = [];
+            const labels = [];
+            const now = new Date();
+
+            // 用于平滑的滑动窗口
+            let rawValues = [];
+
+            for (let i = 0; i < days; i++) {
+                const date = new Date(now);
+                date.setDate(date.getDate() - (days - 1 - i));
+                labels.push(`${date.getMonth()+1}/${date.getDate()}`);
+
+                // ---- 4a. 长期趋势（0~30天） ----
+                const progress = i / days;
+                let trendFactor = 1.0;
+                if (trendType === 0) { // 上升趋势
+                    trendFactor = 0.70 + 0.60 * progress;
+                } else if (trendType === 1) { // 下降趋势
+                    trendFactor = 1.30 - 0.60 * progress;
+                } else if (trendType === 2) { // 先升后降（山峰型）
+                    trendFactor = 0.70 + 0.90 * Math.sin(progress * Math.PI);
+                } else { // 先降后升（山谷型）
+                    trendFactor = 0.70 + 0.90 * (1 - Math.sin(progress * Math.PI));
+                }
+
+                // ---- 4b. 季节性/周期性波动（模拟每周/每月周期） ----
+                const seasonal = 1 + 0.18 * Math.sin(progress * 6.28 * 1.5 + seed * 0.1);
+
+                // ---- 4c. 周末效应（周六日热度提升 12~18%） ----
+                const dayOfWeek = date.getDay(); // 0=周日, 6=周六
+                const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                const weekendBoost = isWeekend ? (1.12 + rand(0, 0.08)) : 1.0;
+
+                // ---- 4d. 事件/节日峰值（在特定日期附近出现峰值） ----
+                const dayOfMonth = date.getDate();
+                let eventBoost = 1.0;
+                // 每月 15~18 日附近模拟大促/节日效应
+                if (dayOfMonth >= 14 && dayOfMonth <= 20) {
+                    const peakFactor = 1 - Math.abs(dayOfMonth - 17) / 6;
+                    eventBoost = 1 + 0.25 * peakFactor;
+                }
+                // 每月 1~3 日（月初）有小幅提升
+                if (dayOfMonth >= 1 && dayOfMonth <= 3) {
+                    eventBoost *= 1.08;
+                }
+
+                // ---- 4e. 随机噪声（但用平滑方式，避免锯齿） ----
+                const noise = 1 + (rand(-1, 1) * volatility * 0.7);
+
+                // ---- 4f. 合成当日热度 ----
+                let value = baseHeat * trendFactor * seasonal * weekendBoost * eventBoost * noise;
+
+                // 确保不低于 500
+                value = Math.max(500, Math.round(value));
+
+                // 存入原始值（后续做平滑处理）
+                rawValues.push(value);
+            }
+
+            // ---- 5. 平滑处理（3日移动平均），让曲线更自然 ----
+            const smoothed = [];
+            for (let i = 0; i < rawValues.length; i++) {
+                let sum = 0,
+                    count = 0;
+                for (let j = -1; j <= 1; j++) {
+                    const idx = i + j;
+                    if (idx >= 0 && idx < rawValues.length) {
+                        sum += rawValues[idx];
+                        count++;
+                    }
+                }
+                smoothed.push(Math.round(sum / count));
+            }
+
+            // ---- 6. 计算指标 ----
+            const current = smoothed[smoothed.length - 1];
+            const dailyAvg = Math.round(smoothed.reduce((a, b) => a + b, 0) / smoothed.length);
+            const prevAvg = Math.round(smoothed.slice(0, 15).reduce((a, b) => a + b, 0) / 15);
+            const change = ((current - prevAvg) / prevAvg * 100);
+            const changeStr = (change > 0 ? '+' : '') + change.toFixed(1) + '%';
+
+            // ---- 7. 热度等级（更真实的区间） ----
+            let level = '📊 平稳';
+            let levelColor = '#6b7280';
+            if (current > 8500) { level = '🔥 爆热';
+                levelColor = '#dc2626'; } else if (current > 6500) { level = '🔥 热门';
+                levelColor = '#f97316'; } else if (current > 4500) { level = '📈 上升';
+                levelColor = '#3b82f6'; } else if (current > 2800) { level = '📊 平稳';
+                levelColor = '#6b7280'; } else { level = '📉 低迷';
+                levelColor = '#9ca3af'; }
+
+            // 如果环比增长超过 15%，提升等级
+            if (change > 15 && current > 4000) {
+                level = '🚀 飙升';
+                levelColor = '#8b5cf6';
+            }
+
+            return {
+                labels,
+                data: smoothed,
+                current,
+                dailyAvg,
+                change: changeStr,
+                changeValue: change,
+                level,
+                levelColor
+            };
+        }
+
+        // ============================================================
+        //  图表渲染
+        // ============================================================
+        let chartInstance = null;
+
+        function renderHeatChart(keyword) {
+            const result = generateHeatData(keyword);
+            const ctx = document.getElementById('heatChart').getContext('2d');
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // 显示结果区
+            document.getElementById('heatResult').classList.add('active');
+            document.getElementById('keywordDisplay').textContent = keyword;
+
+            // 更新指标
+            document.getElementById('metricIndex').textContent = result.current.toLocaleString();
+            document.getElementById('metricDaily').textContent = result.dailyAvg.toLocaleString();
+
+            const changeEl = document.getElementById('metricChange');
+            changeEl.textContent = result.change;
+            changeEl.className = 'value';
+            if (result.changeValue > 3) {
+                changeEl.classList.add('change', 'up');
+            } else if (result.changeValue < -3) {
+                changeEl.classList.add('change', 'down');
+            } else {
+                changeEl.classList.add('change', 'flat');
+            }
+
+            document.getElementById('metricLevel').innerHTML =
+                `<span style="color:${result.levelColor};">${result.level}</span>`;
+
+            // 绘制图表 - 使用渐变填充
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(79, 110, 247, 0.30)');
+            gradient.addColorStop(0.4, 'rgba(79, 110, 247, 0.12)');
+            gradient.addColorStop(1, 'rgba(79, 110, 247, 0.02)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: result.labels,
+                    datasets: [{
+                        label: '搜索热度',
+                        data: result.data,
+                        borderColor: '#4f6ef7',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        pointRadius: 2.5,
+                        pointBackgroundColor: '#4f6ef7',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 1.5,
+                        fill: true,
+                        tension: 0.35,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255,255,255,0.95)',
+                            titleColor: '#1a1a2e',
+                            bodyColor: '#4f6ef7',
+                            borderColor: '#e5e9f0',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            padding: 10,
+                            callbacks: {
+                                label: function(context) {
+                                    return '热度: ' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 12,
+                                font: { size: 10, family: 'Inter' },
+                                color: '#9ca3af'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: { size: 10, family: 'Inter' },
+                                color: '#9ca3af',
+                                callback: function(value) {
+                                    if (value >= 10000) return (value / 10000).toFixed(0) + 'w';
+                                    if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
+                                    return value;
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+
+            // 延迟调整大小以确保渲染正确
+            setTimeout(() => {
+                if (chartInstance) {
+                    chartInstance.resize();
+                }
+            }, 100);
+        }
+
+        // ============================================================
+        //  搜索功能
+        // ============================================================
+        function handleSearch() {
+            const input = document.getElementById('keywordInput');
+            const keyword = input.value.trim();
+            if (!keyword) {
+                input.focus();
+                input.style.borderColor = '#ef4444';
+                setTimeout(() => {
+                    input.style.borderColor = '#e5e9f0';
+                }, 1000);
+                return;
+            }
+
+            const btn = document.getElementById('searchBtn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner spinner"></i> 查询中...';
+            btn.disabled = true;
+
+            // 模拟网络延迟 300~600ms
+            setTimeout(() => {
+                renderHeatChart(keyword);
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }, 300 + Math.random() * 300);
+        }
+
+        // ============================================================
+        //  刷新
+        // ============================================================
+        document.getElementById('refreshBtn').addEventListener('click', function() {
+            const btn = this;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 分析中...';
+            setTimeout(() => {
+                renderAnalysis();
+                btn.innerHTML = '<i class="fas fa-sync-alt"></i> 刷新分析';
+            }, 300);
+        });
+
+        // ============================================================
+        //  搜索事件
+        // ============================================================
+        document.getElementById('searchBtn').addEventListener('click', handleSearch);
+        document.getElementById('keywordInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSearch();
+            }
+        });
+
+        // ============================================================
+        //  启动
+        // ============================================================
+        renderAnalysis();
+
+        // 默认自动查询一次
+        setTimeout(() => {
+            handleSearch();
+        }, 500);
+
+        // ============================================================
+        //  右下角反馈
+        // ============================================================
+        document.getElementById('feedbackFloat').addEventListener('click', function() {
+            const wechatId = 'txp80290335';
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(wechatId).then(() => {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = `
+                                <i class="fas fa-check-circle" style="color:#4ade80;"></i>
+                                <span>已复制微信号</span>
+                            `;
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                    }, 2000);
+                }).catch(() => {
+                    alert('请手动复制微信号：' + wechatId);
+                });
+            } else {
+                alert('请手动复制微信号：' + wechatId);
+            }
+        });
+    </script>
+</body>
+</html>
